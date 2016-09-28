@@ -1,0 +1,30 @@
+version: "2"
+services:
+  nginx:
+    build: ./nginx
+    links:
+      - web:web
+    ports:
+        - "8000:8000"
+  web:
+    container_name: "web"
+    build: .
+    links:
+      - db
+    environment:
+      - PGHOST=db
+      - PGDATABASE=postgres
+      - PGUSER=postgres
+    volumes:
+    - "./src:/usr/src/app"
+    ports:
+      - 3000
+  db:
+    image: postgres
+    volumes:
+    - postgres:/var/lib/postgresql/data
+  
+
+volumes:
+  web:
+  postgres:
