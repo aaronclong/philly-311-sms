@@ -4,10 +4,12 @@ const
   router = require('koa-router')(),
   app = require('koa')(),
   parse = require('co-body'),
-  db = require("./db/orm");
+  { Users, Messages, Claims } = require("./db/orm");
 
 router.get('/', function* () {
     this.body = 'Hello World';
+    let user = User.build({ number: "6097059870", zip: "08234"});
+    user.save().then(() => console.log("It was saved!!!"))
 });
 
 router.post('/sms', function* (next) {

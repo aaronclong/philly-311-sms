@@ -11,18 +11,21 @@ services:
     build: .
     links:
       - db
-    environment:
-      - PGHOST=db
-      - PGDATABASE=postgres
-      - PGUSER=postgres
     volumes:
     - "./src:/usr/src/app"
     ports:
       - 3000
   db:
-    image: postgres
+    container_name: "db"
+    build: ./db
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - PGDATABASE=phillysms
+    ports:
+      - "5432:5432"
     volumes:
-    - postgres:/var/lib/postgresql/data
+    - "postgres:/var/lib/psql/data"
   
 
 volumes:

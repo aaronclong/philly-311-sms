@@ -1,0 +1,3 @@
+CREATE USER user WITH PASSWORD 'password';
+CREATE DATABASE phillysms;
+GRANT ALL PRIVILEGES ON DATABASE phillysms TO user;
