@@ -1,21 +1,29 @@
+"use strict";
+
 const 
 	Sequelize = require('sequelize'),
 	//Connecting to Database
-	sequelize = new Sequelize("postgres://postgress@db:5432/postgress"),
+	sequelize = new Sequelize("postgres://admin:password@db:5432/admin"),
 
 
 	//Users Table Object
-	Users = sequelize.define('User', {
+	Users = sequelize.define('Users', {
 							  id: {
 							  	type: Sequelize.INTEGER,
-							  	primaryKey: true
+							  	primaryKey: true,
+							  	autoIncrement: true
 							  },
 							  number: {
 							  	type: Sequelize.STRING,
 							  	allowNull: false,
 							  	validate: { isNumeric: true }
 							  },
-							  zip: Sequelize.STRING
+							  zip: Sequelize.STRING,
+							 },
+							 {
+								  getterMethods: {
+								  	getID: function() { return this.id; }
+								  }
 							 }),
 	//Message Table Object
 	Messages = sequelize.define('Messages', {
@@ -24,12 +32,11 @@ const
 									    defaultValue: Sequelize.UUIDV1,
 									    primaryKey: true
 									},
-									to: {
-										type: Sequelize.STRING,
-										references: { model: 'User', key: 'id'}
+									user: {
+										type: Sequelize.INTEGER,
+										references: { model: 'Users', key: 'id'}
 									},
 									messageSid: Sequelize.STRING,
-									from: Sequelize.STRING,
 									body: Sequelize.TEXT,
 									zip: Sequelize.STRING
 								}),
@@ -42,11 +49,20 @@ const
 								},
 								user: {
 									type: Sequelize.INTEGER,
-									references: { model: 'User', key: 'id'}
+									references: { model: 'Users', key: 'id'}
 								},
 								department: Sequelize.INTEGER,
-								messages: Sequelize.ARRAY(Sequelize.UUID)
+								messages: Sequelize.ARRAY(Sequelize.UUID),
+								//Status is defined by 0 being solved
+								// 1 equally still open
+								// 2 expired or error
+								status: {
+									type: Sequelize.INTEGER,
+									defaultValue: 1,
+									validate: { min: 0, max: 3 }
+								}
 							});
+
 	
 	//Creates Tables if not already created
 	//False indicates wether or not to drop tables if already exists

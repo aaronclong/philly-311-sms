@@ -8,20 +8,19 @@ services:
         - "8000:8000"
   web:
     container_name: "web"
-    build: .
+    build: ./web
     links:
       - db
     volumes:
-    - "./src:/usr/src/app"
+    - "./web/src:/usr/src/app"
     ports:
       - 3000
   db:
     container_name: "db"
     build: ./db
     environment:
-      - POSTGRES_USER=user
+      - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=password
-      - PGDATABASE=phillysms
     ports:
       - "5432:5432"
     volumes:
