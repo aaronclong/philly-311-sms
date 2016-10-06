@@ -42,25 +42,27 @@ module.exports = {
 	 * @param {String} num: Phone number
 	 * @returns (Claim if available)
 	 */
-	getClaim: function(num) {
-		let theUser = getUser(num);
-		if (theUser === -1) return;
+	getOrMakeClaim: function(user, req) {
 		try {
-			let claim = Claims.findAll({
+			let claim = Claims.findOrCreate({
 				where: { 
-					user: theUser,
+					user: user,
 					updatedAt: { 
 						$lt: new Date(), 
 						$gt: new Date(new Date() - 60 * 1000) 
 					},
 					status: 1
 				}
-			}).then();
+			}).then(claim => {
+				if (claim === undefined) return;
+				claim.update({})
+			});
 			return claim;
 		} catch(sqlError) {
 			return -2;
 		}
 	},
+
 
 	/*
 	 * Finds or Make User entry
@@ -69,6 +71,7 @@ module.exports = {
 	 */
 	getOrMakeUser: function(num, func) {
 		try {
+			console.log("What is the error");
 			Users.findOrCreate({
 				where: { number: num }
 			}).spread(function(user, created) {

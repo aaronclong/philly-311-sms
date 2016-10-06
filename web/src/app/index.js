@@ -27,8 +27,7 @@ router.post("/sms", function* (next) {
         return;
   }
   let response = new Response(params);
-  response.defineUser();
-  console.log(response.getRequest());
+  response.defUser();
   this.body = response.returnMessage();
 }); 
 

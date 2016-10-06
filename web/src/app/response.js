@@ -18,6 +18,30 @@ let rspMsg = {
 }
 
 /*
+ * Compossible setter for callbacks
+ * @param {setter} Method variable to be eventually set
+ * @param {func} Method to call on callback
+ * @return (Returns an autobound callback function)
+ */
+ 
+let setFunc = (setter, func) => {
+
+	//let ist = this;
+	//@param {val} Value to be added
+	//setter.bind(this);
+	//func.bind(this);
+
+	console.log("Made it this far!!!");
+	console.log(this);
+	let callBack = function(val) {
+		console.log("Hey");
+		setter(val);
+		func();
+	}
+	return callBack.bind(this);
+}
+
+/*
  * Response Object that serializes and distributed parsed Twilio requests
  * @param data
  */
@@ -34,33 +58,24 @@ class Response {
 
 	}
 
-	defineUser(wait) {
-		let setUser = val => {
+	defUser() {
+		/*let setUser = val => {
 			this.user = val;
 			this.setRequest();
-		}
-		let q = query.getOrMakeUser(this.meta["From"], setUser.bind(this));
-
-		/*if (q === -1) {
-			let fields = ["From", "FromZip"].filter( i => {
-				if (this.meta[i] !== undefined) return i;
-			});
-			q = addUser(fields);
 		} */
-		//console.log("DEfined Users");
-		//console.log(q);
-		//this.user = q;
+		query.getOrMakeUser(this.meta["From"], setFunc(this.setUser.bind(this), this.defRequest));
 	}
 
 	getRequest() {
 		return this.request;
 	}
 
-	makeClaim() {
-
+	defClaim() {
+		if (this.user === null && this.request == null) throw Error("\nUser not substantiated\n");
+		query.getOrMakeClaim();
 	}
 
-	setRequest() {
+	defRequest() {
 		if (this.user === null) throw Error("\nUser not substantiated\n");
 		let { Body, MessageSid, FromZip } = this.meta;
 		let obj = {
@@ -69,8 +84,18 @@ class Response {
 			        "user": this.user,
 			        "zip": FromZip
 			      };
+		let options = ["1", "2", "3", "4", "5", "6", "7"];
+		if (options.find(Body) !== undefined) setFunc(this.setRequest, this.defClaim);
 		let req = query.addMessage(obj);
 		this.request = req !== -2 ? req : null;
+	}
+
+	setRequest(val) {
+		this.request = val;
+	}
+
+	setUser(val) {
+		this.user = val;
 	}
 
 	returnMessage() {
