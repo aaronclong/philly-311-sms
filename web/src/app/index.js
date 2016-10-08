@@ -4,13 +4,14 @@ const
   router = require("koa-router")(),
   app = require("koa")(),
   parse = require("co-body"),
+  { getAllMessages } = require("./db/queries"),
   { Response } = require("./response");
 
 //returns Boolean true if exists
 let checkParams = (data) => {
   let status = true;
   let params = ["Body", "From", "MessageSid"];
-  params.map( i => {
+  params.forEach( i => {
     if (data[i] === 'undefined') status = false;
   });
   return status;

@@ -1,36 +1,52 @@
 "use strict";
 
 //Import ORM Objects
-const { Users, Messages, Claims } = require("./orm");
+const 
+	{ Users, Messages, Claims } = require("./orm"),
+	Sequelize = require("sequelize");
 
 module.exports = {
-
-	addUser: function(data) {
+	
+	/*
+	 * Add our update claim's state
+	 * @param {claimData} Array containing first the id 
+	 * 		then the rest of the data to apply
+	 * @returns (0 if succesful, -2 otherwise)
+	 */
+	addOrUpdateClaim: function(claimData) {
 		try {
-			Users.create()
+			Claims.fetchOne({ id: claimData[0] })
+				  .then(result => {
+				  	result.setDataValue("state", claimData[1].status);
+				  	result.get("messages").push(claimData[1].addMessage);
+				  	result.save();
+				  	console.log("Update Claim Done")
+				  });
 
 		} catch (sqlError) {
-			console.log(sqlError);
+			console.error(sqlError);
 			return -2;
 		}
 
 	},
 
-
 	/*
 	 * Add message to database organized object
-	 * @param {JSON} data: Phone number
-	 * @returns (UUID)
+	 * 		via the callBack function
+	 * @param {data} JSON data providing the message and caller
+	 * @returns (0 if succesful, -2 otherwise)
 	 */
-	addMessage: function(data) {
-		try {
-		  	Messages.build(data).save()
-		          .then(msg => {
-		          	return msg.get("id");
-		          });
+	addMessage: function(data, callBack) {
+		try { 
+			 Messages.create(data)
+					 .then(result => { 
+					 	callBack(result.get("id"))
+					 	console.log("Message is done!!!")
+					 });
+			return 0;
+		  	
 		} catch (sqlError) {
-			console.log("1");
-			console.log(sqlError);
+			console.error(sqlError);
 			return -2;
 		}
 
@@ -39,26 +55,37 @@ module.exports = {
 
 	/*
 	 * Finds the claim based on it's last modification, number, and status
-	 * @param {String} num: Phone number
-	 * @returns (Claim if available)
+	 * @param {user} num: Phone number
+	 * @param {callBack} function to be called on completion
+	 * @returns (Claim's data if available, -2 otherwise)
 	 */
-	getOrMakeClaim: function(user, req) {
+	getOrMakeClaim: function(userId, callBack) {
 		try {
-			let claim = Claims.findOrCreate({
+			console.log("At Claim\n" +userId)
+			Claims.findOrCreate({
 				where: { 
-					user: user,
-					updatedAt: { 
-						$lt: new Date(), 
-						$gt: new Date(new Date() - 60 * 1000) 
-					},
-					status: 1
+						user: userId,
+						//state: { $lt: 4, $gt: 0 },
+						updatedAt: { 
+							$lt: new Date(), 
+							$gt: new Date(new Date() - 60 * 1000) 
+						}
 				}
-			}).then(claim => {
+			}).spread((claim, created) => {
 				if (claim === undefined) return;
-				claim.update({})
+				let data = {};
+				data["id"] = claim.get("id");
+				data["state"] = claim.get("state");
+				callBack(data);
+				console.log("Get Claim Done")
+			}).catch(sqlError =>{
+			console.log("Claim Problem")
+			console.error(sqlError)
+			return -2;
 			});
-			return claim;
 		} catch(sqlError) {
+			console.log("Claim Problem")
+			console.error(sqlError)
 			return -2;
 		}
 	},
@@ -67,17 +94,14 @@ module.exports = {
 	/*
 	 * Finds or Make User entry
 	 * @param {String} num: Phone number
-	 * @returns (Integer Key for Particular User)
+	 * @returns (0 if succesful, -2 otherwise)
 	 */
-	getOrMakeUser: function(num, func) {
+	getOrMakeUser: function(num, callBack) {
 		try {
-			console.log("What is the error");
 			Users.findOrCreate({
 				where: { number: num }
-			}).spread(function(user, created) {
-				func(user.get("id"));
-				console.log("Success")
-			});
+			}).spread((user, created) => callBack(user.get("id")));
+			return 0;
 		} catch(sqlError) {
 			console.log(sqlError);
 			return -2;

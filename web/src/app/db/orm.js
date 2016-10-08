@@ -1,13 +1,13 @@
 "use strict";
 
 const 
-	Sequelize = require('sequelize'),
+	Sequelize = require("sequelize"),
 	//Connecting to Database
 	sequelize = new Sequelize("postgres://admin:password@db:5432/admin"),
 
 
 	//Users Table Object
-	Users = sequelize.define('Users', {
+	Users = sequelize.define("Users", {
 							  id: {
 							  	type: Sequelize.INTEGER,
 							  	primaryKey: true,
@@ -26,7 +26,7 @@ const
 								  }
 							 }),
 	//Message Table Object
-	Messages = sequelize.define('Messages', {
+	Messages = sequelize.define("Messages", {
 									id: {
 									 	type: Sequelize.UUID,
 									    defaultValue: Sequelize.UUIDV1,
@@ -34,14 +34,14 @@ const
 									},
 									user: {
 										type: Sequelize.INTEGER,
-										references: { model: 'Users', key: 'id'}
+										references: { model: "Users", key: "id"}
 									},
 									messageSid: Sequelize.STRING,
 									body: Sequelize.TEXT,
 									zip: Sequelize.STRING
 								}),
 	//Clains Table Object
-	Claims = sequelize.define('Claims', {
+	Claims = sequelize.define("Claims", {
 								id: {
 									type: Sequelize.UUID,
 									defaultValue: Sequelize.UUIDV1,
@@ -49,17 +49,19 @@ const
 								},
 								user: {
 									type: Sequelize.INTEGER,
-									references: { model: 'Users', key: 'id'}
+									references: { model: "Users", key: "id"}
 								},
-								department: Sequelize.INTEGER,
-								messages: Sequelize.ARRAY(Sequelize.UUID),
-								//Status is defined by 0 being solved
-								// 1 equally still open
-								// 2 expired or error
-								status: {
+								department: Sequelize.STRING,
+								messages: { type: Sequelize.ARRAY(Sequelize.UUID), defaultValue: [] }, 
+								state: {
 									type: Sequelize.INTEGER,
-									defaultValue: 1,
-									validate: { min: 0, max: 3 }
+									defaultValue: 3
+								}
+							}, {
+								setterMethods: {
+									addToArray: function(item) {
+										this.setDataValue("messages", item);
+									}
 								}
 							});
 

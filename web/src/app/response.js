@@ -14,36 +14,28 @@ let rspMsg = {
 	"6" : "Enter # from list\n 1 - Tree blocking roadway\n 2 - Tree on utility line\n 3 - Tree on public thoroughfare\n 4 - Other",
 	"7" : "Enter # from list\n 1 -  Vehicle has a license plate\n 2 - Vehicle has no plates",
 	"local" : "Where did this take place?",
-	"extra" : "Anymore details you would like to add?"
+	//"extra" : "Anymore details you would like to add?" TODO
 }
 
 /*
- * Compossible setter for callbacks
+ * A very ugly compossible setter for callbacks
  * @param {setter} Method variable to be eventually set
  * @param {func} Method to call on callback
  * @return (Returns an autobound callback function)
  */
  
-let setFunc = (setter, func) => {
-
-	//let ist = this;
-	//@param {val} Value to be added
-	//setter.bind(this);
-	//func.bind(this);
-
-	console.log("Made it this far!!!");
-	console.log(this);
+let setFunc = function(setter, func) {
+	//Callback back function to be returned
 	let callBack = function(val) {
-		console.log("Hey");
 		setter(val);
-		func();
+		if (func !== undefined) func();
 	}
-	return callBack.bind(this);
+	return callBack;
 }
 
 /*
  * Response Object that serializes and distributed parsed Twilio requests
- * @param data
+ * @param {data} JSON Object from Twilio
  */
 
 class Response {
@@ -52,18 +44,29 @@ class Response {
 		//store the id number of associated field
 		this.user = null;
 		this.request = null;
-	}
+		this.claim = { id: null, status: null };
+		//Message to return
+		this.response = "";
+	} 
 
-	addToClaim() {
+
+	/*
+	 * @param {updateObj} JSON Object consisting of following fields or undefined:
+	 *  				  1) status - Integer, determine the opened or closed status of claim
+	 *  				  2) addMsg - String, message to be added to internal array
+	 */
+	addToClaim(updateObj) {
+		if (this.claim === null) return;
+		console.log(updateObj);
+		queries.addOrUpdateClaim([this.claim["id"], updateObj]);
+
 
 	}
 
 	defUser() {
-		/*let setUser = val => {
-			this.user = val;
-			this.setRequest();
-		} */
-		query.getOrMakeUser(this.meta["From"], setFunc(this.setUser.bind(this), this.defRequest));
+		query
+		    .getOrMakeUser(this.meta["From"], 
+			                 setFunc(this.setUser.bind(this), this.defRequest.bind(this)));
 	}
 
 	getRequest() {
@@ -71,37 +74,56 @@ class Response {
 	}
 
 	defClaim() {
-		if (this.user === null && this.request == null) throw Error("\nUser not substantiated\n");
-		query.getOrMakeClaim();
+		if (this.user === null) throw Error("\nUser not substantiated\n");
+		query.getOrMakeClaim(this.user, setFunc(this.setClaim.bind(this), this.setResponse.bind(this)));
 	}
 
 	defRequest() {
 		if (this.user === null) throw Error("\nUser not substantiated\n");
 		let { Body, MessageSid, FromZip } = this.meta;
 		let obj = {
-			        "body": Body,
-			        "messageSId": MessageSid,
-			        "user": this.user,
-			        "zip": FromZip
-			      };
-		let options = ["1", "2", "3", "4", "5", "6", "7"];
-		if (options.find(Body) !== undefined) setFunc(this.setRequest, this.defClaim);
-		let req = query.addMessage(obj);
-		this.request = req !== -2 ? req : null;
+			        body: Body,
+			        messageSId: MessageSid,
+			        user: this.user,
+			        zip: FromZip
+			      }
+		this.response = Body.length <= 3 && rspMsg[Body] !== undefined ? rspMsg[Body] : "";
+		console.log(obj);
+		query
+			.addMessage(obj,
+						 setFunc(this.setRequest.bind(this), this.defClaim.bind(this)));
+	}
+
+	setClaim(val) {
+		this.claim = val;
+		this.setResponse();
 	}
 
 	setRequest(val) {
 		this.request = val;
 	}
 
+	setResponse() {
+		if (this.claim.id === null) {
+			let { Body } = this.meta;
+			this.response = rspMsg[Body];
+		}
+		if (this.respnse === "" && this.claim.status === 3) {
+			this.respnse = rspMsg["local"]; 
+			this.addToClaim({ status: 2, addMsg: this.request });
+		} else if (this.respnse === "" && this.claim.status === 2) {
+			this.respnse = "Thank you, your claim number is " + this.claim.id; 
+			this.addToClaim({ status: 2, addMsg: this.request });
+		}
+	}
+
 	setUser(val) {
 		this.user = val;
+		console.log("This is user\n" + this.user)
 	}
 
 	returnMessage() {
-		let { Body } = this.meta;
-		//let notValid = "You're message wasn't formatted correctly";
-		return rspMsg[Body] !== undefined ? rspMsg[Body] : rspMsg["311"];
+		return this.response;
 	}
 }
 
