@@ -52,16 +52,12 @@ const
 									references: { model: "Users", key: "id"}
 								},
 								department: Sequelize.STRING,
-								messages: { type: Sequelize.ARRAY(Sequelize.UUID), defaultValue: [] }, 
+								messages: { type: Sequelize.JSON, 
+											defaultValue: { messages: [] }
+								},
 								state: {
 									type: Sequelize.INTEGER,
 									defaultValue: 3
-								}
-							}, {
-								setterMethods: {
-									addToArray: function(item) {
-										this.setDataValue("messages", item);
-									}
 								}
 							});
 
