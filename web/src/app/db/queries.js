@@ -56,11 +56,14 @@ module.exports = {
 		console.log("At Claim\n" +userId)
 		return Claims.findOrCreate({
 					where: { 
+						$and: {
 							user: userId,
+							state: { $gt: 0 }, 
 							updatedAt: { 
 								$lt: new Date(), 
 								$gt: new Date(new Date() - 60 * 1000) 
 							}
+						}
 					}
 				}).spread((claim, created) => {
 					if (claim === undefined) return;
@@ -85,10 +88,10 @@ module.exports = {
 	getOrMakeUser: function(num) {
 		return Users.findOrCreate({
 				where: { number: num }
-			}).spread((user, created) => user.get("id"));
-
-		} catch(sqlError => {
-			console.log(sqlError);
-			return -2;
+			}).spread((user, created) => { user.get("id") })
+			  .catch(sqlError => {
+				console.log(sqlError);
+				return -2;
 		});
+	}
 }
