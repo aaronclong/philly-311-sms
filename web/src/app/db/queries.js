@@ -1,9 +1,7 @@
 "use strict";
 
 //Import ORM Objects
-const 
-	{ Users, Messages, Claims } = require("./orm"),
-	Sequelize = require("sequelize");
+const { sequilize, Users, Messages, Claims } = require("./orm");
 
 module.exports = {
 	
@@ -14,19 +12,12 @@ module.exports = {
 	 * @returns (0 if succesful, -2 otherwise)
 	 */
 	addOrUpdateClaim: function(claimData) {
-		console.log(claimData);
-		return Claims.findOne({ id: claimData[0] })
-			  .then(result => {
-			  	let data = result.get("messages");
-			  	data.messages.push(claimData[1].messages);
-			  	claimData[1].messages = data;
-			  	result.update(claimData[1]);
-			  	return 0;
-			  }).catch(sqlError => {
-						console.error(sqlError);
-						return -2;
-					});
-
+		return Claims.find({ id: claimData[0] })
+					 .then(result => {
+					 	result.state = claimData[1].state;
+					 	result.save();
+					 });
+		
 	},
 
 	/*
@@ -53,30 +44,33 @@ module.exports = {
 	 * @returns (Claim's data if available, -2 otherwise)
 	 */
 	getOrMakeClaim: function(userId) {
-		console.log("At Claim\n" +userId)
-		return Claims.findOrCreate({
-					where: { 
+		return Claims.find({where: { 
 						$and: {
 							user: userId,
-							state: { $gt: 0 }, 
-							updatedAt: { 
-								$lt: new Date(), 
-								$gt: new Date(new Date() - 60 * 1000) 
-							}
+							state: { $in: [1, 2, 3] }
 						}
-					}
-				}).spread((claim, created) => {
-					if (claim === undefined) return;
-					let data = {
-						id: claim.get("id"),
-						state: claim.get("state")
-					}
-					return data;
-				}).catch(sqlError =>{
-					console.log("Claim Problem");
-					console.error(sqlError);
-					return -2;
-				});
+					}}).then(claim => {
+						if (claim===null) {
+							return Claims.create({user: userId})
+											.then(result => {
+												let data = {
+													id: result.get("id"),
+													state: result.get("state")
+												}
+												return data;
+											});
+
+						}
+						let data = {
+							id: claim.get("id"),
+							state: claim.get("state")
+						}
+						return data;
+					}).catch(sqlError =>{
+							console.log("Claim Problem");
+							console.error(sqlError);
+							return -2;
+						});
 	},
 
 
@@ -88,7 +82,9 @@ module.exports = {
 	getOrMakeUser: function(num) {
 		return Users.findOrCreate({
 				where: { number: num }
-			}).spread((user, created) => { user.get("id") })
+			}).then(user => { 
+				return user[0].get("id");
+			})
 			  .catch(sqlError => {
 				console.log(sqlError);
 				return -2;

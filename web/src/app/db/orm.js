@@ -57,7 +57,19 @@ const
 								},
 								state: {
 									type: Sequelize.INTEGER,
-									defaultValue: 3
+									defaultValue: 3,
+									validate: { min: -1, max: 4 }
+								}
+							}, {
+								setterMethods: {
+									setState: function(value) {
+										this.setDataValue('state', value);
+									},
+								    addMessage: function(value) {
+								        let data = this.getDataValue("messages");
+									  	data["messages"].push(value["messages"]);
+								        this.setDataValue('messages', data);
+								    }
 								}
 							});
 
@@ -66,4 +78,4 @@ const
 	//False indicates wether or not to drop tables if already exists
 	sequelize.sync({ force: false });
 
-module.exports = { Users, Messages, Claims };
+module.exports = { sequelize, Users, Messages, Claims };
